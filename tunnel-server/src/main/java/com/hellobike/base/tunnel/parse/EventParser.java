@@ -6,6 +6,8 @@ import com.hellobike.base.tunnel.model.EventType;
 import com.hellobike.base.tunnel.model.InvokeContext;
 import com.hellobike.base.tunnel.store.MemStore;
 
+import java.util.LinkedList;
+
 /*
  * Copyright 2018 Shanghai Junzheng Network Technology Co.,Ltd.
  *
@@ -33,6 +35,8 @@ public class EventParser implements IEventParser {
         this.memStore = new MemStore();
     }
 
+    private LinkedList<InvokeContext> transContext = new LinkedList<>();
+
     private static boolean isBegin(String msg) {
         return msg != null
                 && msg.length() > 5
@@ -56,16 +60,31 @@ public class EventParser implements IEventParser {
 
     @Override
     public void parse(InvokeContext context) {
-        if (isBegin(context.getMessage()) || isCommit(context.getMessage())) {
+        if (isBegin(context.getMessage())) {
             return;
         }
-        Event event = parseEvent(context.getMessage());
-        if (event == null) {
+        if (isCommit(context.getMessage())) {
+            String commitTime = parseCommitTime(context.getMessage());
+            for(InvokeContext ic : transContext){
+                Event event = parseEvent(ic.getMessage());
+                if(event != null){
+                    event.setCommitTime(commitTime);
+                    ic.setEvent(event);
+                    memStore.store(ic);
+                }
+            }
+            transContext.clear();
             return;
         }
-        context.setEvent(event);
+        transContext.add(context);
+    }
 
-        memStore.store(context);
+    private static String parseCommitTime(String message) {
+        String anchor = "at ";
+        if(!message.contains(anchor)){
+            return "";
+        }
+        return message.split(anchor)[1].split("\\)")[0];
     }
 
     private Event parseEvent(String message) {

@@ -139,6 +139,7 @@ public class TunnelServer {
                 .withSlotName(this.jdbcConfig.getSlotName())
                 .withSlotOption("include-xids", true)
                 .withSlotOption("skip-empty-xacts", true)
+                .withSlotOption("include-timestamp", "on")
                 .withStatusInterval(5, TimeUnit.SECONDS)
                 .start();
         log.info("GetRplStream success,slot:{}", this.slotName);

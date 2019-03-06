@@ -36,6 +36,7 @@ public class Event implements Serializable {
     private String table;
     private EventType eventType;
     private List<ColumnData> dataList = new ArrayList<>();
+    private String commitTime;
 
     public String getSlotName() {
         return slotName;
@@ -93,6 +94,14 @@ public class Event implements Serializable {
         this.lsn = lsn;
     }
 
+    public String getCommitTime() {
+        return commitTime;
+    }
+
+    public void setCommitTime(String commitTime) {
+        this.commitTime = commitTime;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -120,6 +129,7 @@ public class Event implements Serializable {
                 ", table='" + table + '\'' +
                 ", eventType=" + eventType +
                 ", dataList=" + dataList +
+                ", commitTime=" + commitTime +
                 '}';
     }
 
