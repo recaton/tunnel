@@ -2,6 +2,7 @@ package com.hellobike.base.tunnel.config.file;
 
 import com.alibaba.fastjson.JSON;
 import com.hellobike.base.tunnel.config.YmlConfig;
+import com.hellobike.base.tunnel.constants.Constants;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
@@ -22,8 +23,8 @@ public class YmlFileConfigLoader extends FileConfigLoader {
         try {
             Yaml yaml = new Yaml();
             YmlConfig ymlConfig = yaml.loadAs(new FileInputStream(file), YmlConfig.class);
-            map.put("tunnel_subscribe_config", JSON.toJSONString(ymlConfig.getTunnel_subscribe_config()));
-            map.put("tunnel_zookeeper_address", ymlConfig.getTunnel_zookeeper_address());
+            map.put(Constants.TUNNEL_KEY, JSON.toJSONString(ymlConfig.getTunnel_subscribe_config()));
+            map.put(Constants.TUNNEL_ZK_KEY, ymlConfig.getTunnel_zookeeper_address());
         } catch (FileNotFoundException e) {
             logger.warn("config file {} not found", file);
         } catch (RuntimeException e) {
