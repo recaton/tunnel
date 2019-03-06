@@ -15,6 +15,7 @@
  */
 package com.hellobike.base.tunnel.config.file;
 
+import com.hellobike.base.tunnel.config.ConfigLoaderFactory;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,16 +32,15 @@ public class FileConfigLoaderTest {
     private static final Logger log = LoggerFactory.getLogger(FileConfigLoaderTest.class);
 
     @Test
-    public void testFileConfigLoader() {
+    public void testPropertiesFileConfigLoader() {
         String file = "test_config.properties";
-        FileConfigLoader loader = new FileConfigLoader(getFilePath(file));
-        loader.addChangeListener((key, oldValue, newValue) -> log.info("key:{},old:{},new:{}", key, oldValue, newValue));
-        try {
-            Thread.currentThread().join(1000 * 60 * 10);
-        } catch (InterruptedException e) {
-            //
-        }
-        loader.close();
+        testFileConfigLoader(ConfigLoaderFactory.getFileConfigLoader(getFilePath(file)));
+    }
+
+    @Test
+    public void testYmlFileConfigLoader() {
+        String file = "cfg.yml";
+        testFileConfigLoader(ConfigLoaderFactory.getFileConfigLoader(getFilePath(file)));
     }
 
     private String getFilePath(String file) {
@@ -58,4 +58,15 @@ public class FileConfigLoaderTest {
         }
         return null;
     }
+
+    private void testFileConfigLoader(FileConfigLoader loader){
+        loader.addChangeListener((key, oldValue, newValue) -> log.info("key:{},old:{},new:{}", key, oldValue, newValue));
+        try {
+            Thread.currentThread().join(1000 * 60 * 10);
+        } catch (InterruptedException e) {
+            //
+        }
+        loader.close();
+    }
+
 }
