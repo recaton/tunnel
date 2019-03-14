@@ -234,8 +234,8 @@ public class TunnelLauncher {
                 .collect(Collectors.groupingBy(TunnelLauncher::generateServerId, Collectors.counting()))
                 .entrySet().stream().filter(entry -> entry.getValue() > 1)
                 .map(Map.Entry::getKey).collect(Collectors.toList());
-        if(duplicateSlotName.size() > 0) {
-            LOGGER.warn("Found duplicate slotName {} under subscribes, please check your config. " +
+        if(duplicateServerId.size() > 0) {
+            LOGGER.warn("Found duplicate server id {} under subscribes, please check your config. " +
                     "The tunnel server will not change until the config is modified correctly.", duplicateServerId);
             return false;
         }
