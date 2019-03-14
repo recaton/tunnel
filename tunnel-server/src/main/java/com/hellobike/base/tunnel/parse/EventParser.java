@@ -147,7 +147,7 @@ public class EventParser implements IEventParser {
     private String parseValue(Lexer lexer) {
         if (lexer.current() == '\'') {
             lexer.skip(1);
-            lexer.nextToken('\'');
+            lexer.nextToken('\'', '\'');
             return lexer.token();
         }
         lexer.nextToken(' ');
@@ -180,6 +180,26 @@ public class EventParser implements IEventParser {
             if (pos < length) {
                 StringBuilder out = new StringBuilder(16);
                 while (pos < length && array[pos] != comma) {
+                    out.append(array[pos]);
+                    pos++;
+                }
+                pos++;
+                return token = out.toString();
+            }
+            return token = null;
+        }
+
+        public String nextToken(char comma, char escape) {
+            if (pos < length) {
+                StringBuilder out = new StringBuilder(16);
+                // 当前字符是comma时，需特殊考虑
+                // 1. 前一个字符是转义字符，则当前字符加入StringBuilder
+                // 2. 当前字符是array的最后一个字符时，跳出循环，当前字符不加入StringBuilder
+                // 3. 当前字符不是array的最后一个字符，如果后一个字符是空格，跳出循环，当前字符不加入StringBuilder
+                // 4. 当前字符不是array的最后一个字符，如果后一个字符不是空格，当前字符加入StringBuilder
+                while (pos < array.length && (array[pos] != comma || (
+                        array[pos] == comma && (array[pos - 1] == escape || (pos != array.length - 1 && array[pos + 1] != ' '))
+                ) )) {
                     out.append(array[pos]);
                     pos++;
                 }

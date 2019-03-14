@@ -35,6 +35,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -44,11 +45,13 @@ public class TunnelServer {
 
     private static final Logger         /**/ log = LoggerFactory.getLogger(TunnelServer.class);
 
+    private static final AtomicInteger index = new AtomicInteger(0);
+
     private final String                /**/ serverId;
     private final SubscribeConfig          /**/ config;
     private final JdbcConfig            /**/ jdbcConfig;
     private final IEventParser          /**/ eventParser = new EventParser();
-    private final ZkLock                /**/ zkLock;
+    private ZkLock                      /**/ zkLock;
     private final String                /**/ slotName;
     private final ReentrantLock         /**/ lock = new ReentrantLock();
 
@@ -65,9 +68,8 @@ public class TunnelServer {
         this.config = config;
         this.jdbcConfig = config.getJdbcConfig();
         this.slotName = this.jdbcConfig.getSlotName();
-        this.zkLock = new ZkLock(this.config.getZkConfig().getAddress(), generateLockKey(config.getJdbcConfig()));
-        this.startThread = new Thread(new StartTask(), "TunnelStartThread-" + this.slotName);
-        this.receiveThread = new Thread(new ReceiveTask(), "TunnelReceiveThread-" + this.slotName);
+        this.startThread = new Thread(new StartTask(), "TST-" + index.incrementAndGet() + "-" + this.slotName);
+        this.receiveThread = new Thread(new ReceiveTask(), "TRT-" + index.get() + "-" + this.slotName);
     }
 
     private static String generateLockKey(JdbcConfig config) {
@@ -85,19 +87,27 @@ public class TunnelServer {
     }
 
     public void start() {
-        this.startThread.start();
+        if(!started){
+            this.startThread.start();
+        }
     }
 
     public void shutdown() {
         started = false;
         closeClosable(this.stream);
         closeClosable(this.connection);
-        zkLock.unlock();
-        zkLock.close();
+        if (zkLock != null) {
+            zkLock.unlock();
+            zkLock.close();
+        }
     }
 
     public String getServerId() {
         return serverId;
+    }
+
+    public boolean isRunning() {
+        return started;
     }
 
     private void createRplConn() throws SQLException {
@@ -211,6 +221,7 @@ public class TunnelServer {
 
         @Override
         public void run() {
+            zkLock = new ZkLock(config.getZkConfig().getAddress(), generateLockKey(config.getJdbcConfig()));
             if (zkLock.tryLock()) {
                 try {
                     createRplConn();
@@ -218,9 +229,9 @@ public class TunnelServer {
                     createRplStream();
                     started = true;
                     receiveThread.start();
-                    log.warn("Startup RplStream Success");
+                    log.info("{} Startup RplStream Success", serverId);
                 } catch (Exception e) {
-                    log.warn("Startup RplStream Failure", e);
+                    log.warn("{} Startup RplStream Failure", serverId, e);
                     shutdown();
                 }
             }

@@ -34,6 +34,15 @@ public class ApolloConfig {
     private String pgDumpPath;
     private List<Subscribe> subscribes;
 
+    /**
+     * 全局配置，可以被Subscribe覆盖
+     */
+    private KafkaConf kafkaConf;
+    private EsConf esConf;
+    private HBaseConf hbaseConf;
+    private HiveConf hiveConf;
+    private HdfsConf hdfsConf;
+
     @Data
     public static class Subscribe {
 

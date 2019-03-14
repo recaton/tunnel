@@ -189,11 +189,14 @@ public class TunnelLauncher {
         ApolloConfig apolloConfig = JSON.parseObject(value, ApolloConfig.class);
 
         List<ApolloConfig.Subscribe> subscribes = apolloConfig.getSubscribes();
+        if(!checkSubscribeConfig(subscribes)){
+            return;
+        }
         for (ApolloConfig.Subscribe subscribe : subscribes) {
             TunnelServer newServer = null;
             TunnelServer oldServer = null;
             try {
-                SubscribeConfig subscribeConfig = toTunnelConfig(subscribe);
+                SubscribeConfig subscribeConfig = toTunnelConfig(apolloConfig, subscribe);
                 subscribeConfig.setZkConfig(zkConfig);
                 newServer = new TunnelServer(subscribeConfig);
                 oldServer = TunnelContext.findServer(newServer.getServerId());
@@ -217,14 +220,36 @@ public class TunnelLauncher {
         }
     }
 
-    private static SubscribeConfig toTunnelConfig(ApolloConfig.Subscribe subscribe) {
+    private static boolean checkSubscribeConfig(List<ApolloConfig.Subscribe> subscribes) {
+        List<String> duplicateSlotName = subscribes.stream()
+                .collect(Collectors.groupingBy(ApolloConfig.Subscribe::getSlotName, Collectors.counting()))
+                .entrySet().stream().filter(entry -> entry.getValue() > 1)
+                .map(Map.Entry::getKey).collect(Collectors.toList());
+        if(duplicateSlotName.size() > 0) {
+            LOGGER.warn("Found duplicate slotName {} under subscribes, please check your config. " +
+                    "The tunnel server will not change until the config is modified correctly.", duplicateSlotName);
+            return false;
+        }
+        List<String> duplicateServerId = subscribes.stream()
+                .collect(Collectors.groupingBy(TunnelLauncher::generateServerId, Collectors.counting()))
+                .entrySet().stream().filter(entry -> entry.getValue() > 1)
+                .map(Map.Entry::getKey).collect(Collectors.toList());
+        if(duplicateSlotName.size() > 0) {
+            LOGGER.warn("Found duplicate slotName {} under subscribes, please check your config. " +
+                    "The tunnel server will not change until the config is modified correctly.", duplicateServerId);
+            return false;
+        }
+        return true;
+    }
+
+    private static SubscribeConfig toTunnelConfig(ApolloConfig apolloConfig, ApolloConfig.Subscribe subscribe) {
 
         String slotName = subscribe.getSlotName();
         ApolloConfig.EsConf esConf = subscribe.getEsConf();
-        ApolloConfig.KafkaConf kafkaConf = subscribe.getKafkaConf();
-        ApolloConfig.HBaseConf hbaseConf = subscribe.getHbaseConf();
-        ApolloConfig.HiveConf hiveConf = subscribe.getHiveConf();
-        ApolloConfig.HdfsConf hdfsConf = subscribe.getHdfsConf();
+        ApolloConfig.KafkaConf kafkaConf = subscribe.getKafkaConf() == null ? apolloConfig.getKafkaConf() : subscribe.getKafkaConf();
+        ApolloConfig.HBaseConf hbaseConf = subscribe.getHbaseConf() == null ? apolloConfig.getHbaseConf() : subscribe.getHbaseConf();
+        ApolloConfig.HiveConf hiveConf = subscribe.getHiveConf() == null ? apolloConfig.getHiveConf() : subscribe.getHiveConf();
+        ApolloConfig.HdfsConf hdfsConf = subscribe.getHdfsConf() == null ? apolloConfig.getHdfsConf() : subscribe.getHdfsConf();
 
         ApolloConfig.PgConnConf pgConnConf = subscribe.getPgConnConf();
         List<ApolloConfig.Rule> rules = subscribe.getRules();
@@ -238,20 +263,19 @@ public class TunnelLauncher {
         JdbcConfig jdbcConfig = getJdbcConfig(slotName, pgConnConf);
         SubscribeConfig subscribeConfig = new SubscribeConfig();
         subscribeConfig.setJdbcConfig(jdbcConfig);
-        subscribeConfig.setServerId(generateServerId(pgConnConf.getHost(), pgConnConf.getPort(), jdbcConfig.getSlotName()));
+        subscribeConfig.setServerId(generateServerId(subscribe));
         return subscribeConfig;
     }
 
     /**
      * generate CONFIG_NAME new serverId
      *
-     * @param host host
-     * @param port port
-     * @param slot slot
+     * @param subscribe subscribe
      * @return serverId
      */
-    private static String generateServerId(String host, int port, String slot) {
-        return slot + "@" + host + ":" + port;
+    private static String generateServerId(ApolloConfig.Subscribe subscribe) {
+        String slot = getJdbcConfig(subscribe.getSlotName(), subscribe.getPgConnConf()).getSlotName();
+        return slot + "@" + subscribe.getPgConnConf().getHost() + ":" + subscribe.getPgConnConf().getPort();
     }
 
     private static void parseKafkaConfig(String slotName, ApolloConfig.KafkaConf kafkaConf, List<ApolloConfig.Rule> rules) {
