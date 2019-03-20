@@ -1,0 +1,25 @@
+Configuration:
+  status: info
+
+  Appenders:
+    Console:
+      name: Console
+      target: SYSTEM_OUT
+      PatternLayout:
+        Pattern: "%d %p %t %c - %m%n"
+    RollingFile:
+      name: rollingFile
+      fileName: logs/tunnel.log
+      filePattern: logs/tunnel.%d{yyyy-MM-dd}.log
+      Policies:
+       - TimeBasedTriggeringPolicy:
+           interval: 1
+      append: true
+      PatternLayout:
+        Pattern: "%d %p %t %c - %m%n"
+
+  Loggers:
+    Root:
+      level: info
+      AppenderRef:
+        - ref: rollingFile
