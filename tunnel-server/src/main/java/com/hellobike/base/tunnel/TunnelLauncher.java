@@ -117,9 +117,9 @@ public class TunnelLauncher {
         TUNNEL_CONFIG.setProcessId(getPid());
         TUNNEL_CONFIG.setAppId(cfg.getOrDefault("-a", Constants.APP_ID));
         TUNNEL_CONFIG.setMetaDomain(cfg.getOrDefault("-d", getMetaDomain()));
-        TUNNEL_CONFIG.setUseApollo("true".equalsIgnoreCase(cfg.getOrDefault("-u", "true")));
+        TUNNEL_CONFIG.setUseApollo("true".equalsIgnoreCase(cfg.getOrDefault("-u", "false")));
         TUNNEL_CONFIG.setUseYukon("true".equalsIgnoreCase(cfg.getOrDefault("-y", "false")));
-        TUNNEL_CONFIG.setConfigFile(cfg.get("-c"));
+        TUNNEL_CONFIG.setConfigFile(cfg.getOrDefault("-c", "cfg.yml"));
     }
 
     /**

@@ -22,6 +22,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -42,9 +44,16 @@ public abstract class FileConfigLoader implements ConfigLoader, AutoCloseable {
     private AtomicBoolean started = new AtomicBoolean(Boolean.FALSE);
 
     public FileConfigLoader(String fileName) {
-        this.file = new File(fileName);
-        this.properties.putAll(load(this.file));
+        this.properties.putAll(load(fileName));
         addFileWatcher(this.file);
+    }
+
+    private Map<String, String> load(String fileName) {
+        if (!(this.file = new File(fileName)).isFile() &&
+                !(this.file = new File(System.getProperty("user.dir") + "/conf/" + fileName)).isFile()) {
+            this.file = new File(this.getClass().getResource("/conf/").getPath() + fileName);
+        }
+        return load(file);
     }
 
     protected abstract Map<String, String> load(File file);
