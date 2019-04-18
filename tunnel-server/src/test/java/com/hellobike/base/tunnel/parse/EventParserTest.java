@@ -17,6 +17,7 @@ package com.hellobike.base.tunnel.parse;
 
 import com.hellobike.base.tunnel.model.InvokeContext;
 import com.hellobike.base.tunnel.store.MemStore;
+import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -55,6 +56,38 @@ public class EventParserTest {
         msg = "table public.test_logic_table: DELETE: (no-tuple-data)";
         ctx.setMessage(msg);
         parser.parse(ctx);
+
+    }
+
+    @Test
+    public void test_parseValue() {
+        EventParser parser = new EventParser();
+        String message;
+        // case0: message 中不包含sql规范中的转义字符(英文单引号), 空字符串等特殊情况
+        message = "table public.test: UPDATE: id[bigint]:2121 update_on[timestamp without time zone]:'2019-04-17 16:09:23.656' name[character varying]:'test_name' email[character varying]:null";
+        Assert.assertEquals("test_name", parser.parseEvent(message).getDataList().get(2).getValue());
+        // case1.1: message 中不包含sql规范中的转义字符(英文单引号), value为空字符串的字段在字段列表的中部
+        message = "table public.test: UPDATE: id[bigint]:2121 update_on[timestamp without time zone]:'2019-04-17 16:09:23.656' name[character varying]:'' email[character varying]:null";
+        Assert.assertEquals("", parser.parseEvent(message).getDataList().get(2).getValue());
+        // case1.2: message 中不包含sql规范中的转义字符(英文单引号), value为空字符串的字段在字段列表的尾部
+        message = "table public.test: UPDATE: id[bigint]:2121 update_on[timestamp without time zone]:'2019-04-17 16:09:23.656' email[character varying]:null name[character varying]:''";
+        Assert.assertEquals("", parser.parseEvent(message).getDataList().get(3).getValue());
+
+        // case2.1: message 中包含sql规范中的转义字符(英文单引号), 转义字符出现在value的头部
+        message = "table public.test: UPDATE: id[bigint]:2121 update_on[timestamp without time zone]:'2019-04-17 16:09:23.656' email[character varying]:null name[character varying]:'''test_name'";
+        Assert.assertEquals("''test_name", parser.parseEvent(message).getDataList().get(3).getValue());
+        // case2.2: message 中包含sql规范中的转义字符(英文单引号), 转义字符出现在value的中部
+        message = "table public.test: UPDATE: id[bigint]:2121 update_on[timestamp without time zone]:'2019-04-17 16:09:23.656' email[character varying]:null name[character varying]:'test_''name'";
+        Assert.assertEquals("test_''name", parser.parseEvent(message).getDataList().get(3).getValue());
+        // case2.3: message 中包含sql规范中的转义字符(英文单引号), 转义字符出现在value的尾部
+        message = "table public.test: UPDATE: id[bigint]:2121 update_on[timestamp without time zone]:'2019-04-17 16:09:23.656' email[character varying]:null name[character varying]:'test_name'''";
+        Assert.assertEquals("test_name''", parser.parseEvent(message).getDataList().get(3).getValue());
+        // case2.4: message 中包含sql规范中的转义字符(英文单引号), 转义字符出现在value的两端
+        message = "table public.test: UPDATE: id[bigint]:2121 update_on[timestamp without time zone]:'2019-04-17 16:09:23.656' email[character varying]:null name[character varying]:'''test_name'''";
+        Assert.assertEquals("''test_name''", parser.parseEvent(message).getDataList().get(3).getValue());
+        // case2.4: message 中包含sql规范中的转义字符(英文单引号), 转义字符出现在value的两端和中部
+        message = "table public.test: UPDATE: id[bigint]:2121 update_on[timestamp without time zone]:'2019-04-17 16:09:23.656' email[character varying]:null name[character varying]:'''test''_name'''";
+        Assert.assertEquals("''test''_name''", parser.parseEvent(message).getDataList().get(3).getValue());
 
     }
 

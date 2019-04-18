@@ -87,7 +87,7 @@ public class EventParser implements IEventParser {
         return message.split(anchor)[1].split("\\)")[0];
     }
 
-    private Event parseEvent(String message) {
+    public Event parseEvent(String message) {
         Event event = new Event();
         Lexer lexer = new Lexer(message);
 
@@ -120,9 +120,9 @@ public class EventParser implements IEventParser {
 
 
             // 去除多余的符号 "'"
-            if (value.length() > 0 && value.charAt(0) == '\'' && value.charAt(value.length() - 1) == '\'') {
-                value = value.substring(1, value.length() - 1);
-            }
+//            if (value.length() > 0 && value.charAt(0) == '\'' && value.charAt(value.length() - 1) == '\'') {
+//                value = value.substring(1, value.length() - 1);
+//            }
             data.setName(name);
             data.setDataType(type);
             data.setValue(value);
@@ -192,14 +192,7 @@ public class EventParser implements IEventParser {
         public String nextToken(char comma, char escape) {
             if (pos < length) {
                 StringBuilder out = new StringBuilder(16);
-                // 当前字符是comma时，需特殊考虑
-                // 1. 前一个字符是转义字符，则当前字符加入StringBuilder
-                // 2. 当前字符是array的最后一个字符时，跳出循环，当前字符不加入StringBuilder
-                // 3. 当前字符不是array的最后一个字符，如果后一个字符是空格，跳出循环，当前字符不加入StringBuilder
-                // 4. 当前字符不是array的最后一个字符，如果后一个字符不是空格，当前字符加入StringBuilder
-                while (pos < array.length && (array[pos] != comma || (
-                        array[pos] == comma && (array[pos - 1] == escape || (pos != array.length - 1 && array[pos + 1] != ' '))
-                ) )) {
+                while (array[pos] != comma || (pos != length - 1 && array[pos + 1] != ' ')) {
                     out.append(array[pos]);
                     pos++;
                 }
@@ -221,5 +214,4 @@ public class EventParser implements IEventParser {
             return pos < length;
         }
     }
-
 }
