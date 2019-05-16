@@ -2,6 +2,8 @@ package com.hellobike.base.tunnel.model;
 
 import com.hellobike.base.tunnel.publisher.IPublisher;
 
+import java.io.Serializable;
+
 /*
  * Copyright 2018 Shanghai Junzheng Network Technology Co.,Ltd.
  *
@@ -21,7 +23,7 @@ import com.hellobike.base.tunnel.publisher.IPublisher;
 /**
  * @author machunxiao create at 2018-12-14
  */
-public class InvokeContext {
+public class InvokeContext implements Serializable {
 
     private String serverId;
     private String slotName;

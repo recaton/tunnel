@@ -5,7 +5,10 @@ import com.hellobike.base.tunnel.model.Event;
 import com.hellobike.base.tunnel.model.EventType;
 import com.hellobike.base.tunnel.model.InvokeContext;
 import com.hellobike.base.tunnel.store.MemStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
 import java.util.LinkedList;
 
 /*
@@ -29,13 +32,15 @@ import java.util.LinkedList;
  */
 public class EventParser implements IEventParser {
 
+    private Logger logger = LoggerFactory.getLogger(this.getClass());
+
     private MemStore memStore;
 
     public EventParser() {
         this.memStore = new MemStore();
     }
 
-    private LinkedList<InvokeContext> transContext = new LinkedList<>();
+    private Collection<InvokeContext> transContext = new FileBasedList<>();
 
     private static boolean isBegin(String msg) {
         return msg != null
