@@ -35,7 +35,7 @@ public class Statics {
     private int total;
     private String target;
     private String error;
-    private long currentTime;
+//    private long currentTime;
 
     public static Statics createStatics(String appId, String database, String slotName, String table, int total, String target, String error) {
         return Statics.builder()
@@ -46,7 +46,7 @@ public class Statics {
                 .total(total)
                 .target(target)
                 .error(error)
-                .currentTime(System.currentTimeMillis())
+//                .currentTime(System.currentTimeMillis())
                 .build();
     }
 
@@ -59,7 +59,7 @@ public class Statics {
         map.put("total", getTotal() + "");
         map.put("target", getTarget());
         map.put("error", getError());
-        map.put("currentTime", getCurrentTime() == 0 ? System.currentTimeMillis() : getCurrentTime());
+//        map.put("currentTime", getCurrentTime() == 0 ? System.currentTimeMillis() : getCurrentTime());
         return map;
     }
 }

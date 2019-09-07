@@ -66,14 +66,22 @@ public class EventParser implements IEventParser {
     @Override
     public void parse(InvokeContext context) {
         if (isBegin(context.getMessage())) {
+            logger.debug("trans begin, message is: {}", context.getMessage());
             return;
         }
         if (isCommit(context.getMessage())) {
             String commitTime = parseCommitTime(context.getMessage());
+            logger.debug("trans commit, message is {}, all cache will commit. case size: {}, commit time: {}", context.getMessage(), transContext.size(), commitTime);
             for(InvokeContext ic : transContext){
                 Event event = parseEvent(ic.getMessage());
                 if(event != null){
                     event.setCommitTime(commitTime);
+                    try {
+                        logger.debug("will send event: {}", String.join(",", event.getSchema(), event.getTable(),
+                                event.getDataList().stream().filter(x -> x.getName().equals("id")).findFirst().get().getValue()));
+                    } catch (Exception e) {
+                        logger.debug("will send event for table without \"id\" column");
+                    }
                     ic.setEvent(event);
                     memStore.store(ic);
                 }
@@ -81,6 +89,7 @@ public class EventParser implements IEventParser {
             transContext.clear();
             return;
         }
+        logger.debug("trans continue, current cache size is: {}", transContext.size());
         transContext.add(context);
     }
 
@@ -196,8 +205,12 @@ public class EventParser implements IEventParser {
 
         public String nextToken(char comma, char escape) {
             if (pos < length) {
+                int commaCount = 1;
                 StringBuilder out = new StringBuilder(16);
-                while (array[pos] != comma || (pos != length - 1 && array[pos + 1] != ' ')) {
+                while (!((pos == length - 1 || (array[pos + 1] == ' ' && commaCount % 2 == 1)) && array[pos] == comma)) {
+                    if(array[pos] == comma) {
+                        commaCount++;
+                    }
                     out.append(array[pos]);
                     pos++;
                 }

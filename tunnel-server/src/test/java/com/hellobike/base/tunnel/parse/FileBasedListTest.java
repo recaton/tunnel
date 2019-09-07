@@ -7,19 +7,19 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.Iterator;
 
-public class FileBasedCollectionTest {
+public class FileBasedListTest {
 
-    FileBasedList<Integer> collection;
+    FileBasedList<Integer> list;
 
     @Before
     public void before() {
-        collection = new FileBasedList<>(2);
-        collection.addAll(Arrays.asList(101, 202, 303));
+        list = new FileBasedList<>(2);
+        list.addAll(Arrays.asList(101, 202, 303));
     }
 
     @Test
     public void testAddAll() {
-        Iterator<Integer> it = collection.iterator();
+        Iterator<Integer> it = list.iterator();
         int seq = 0;
         while (it.hasNext()) {
             int v = it.next();
@@ -34,18 +34,18 @@ public class FileBasedCollectionTest {
 
     @Test
     public void testIterator() {
-        collection = new FileBasedList<>(2);
-        Assert.assertFalse(collection.iterator().hasNext());
-        collection.add(7);
-        Assert.assertTrue(collection.iterator().hasNext());
+        list = new FileBasedList<>(2);
+        Assert.assertFalse(list.iterator().hasNext());
+        list.add(7);
+        Assert.assertTrue(list.iterator().hasNext());
     }
 
     @Test
     public void testAdd() {
-        collection.add(404);
-        collection.addAll(Arrays.asList(505, 606));
-        collection.add(707);
-        Iterator<Integer> it = collection.iterator();
+        list.add(404);
+        list.addAll(Arrays.asList(505, 606));
+        list.add(707);
+        Iterator<Integer> it = list.iterator();
         int seq = 0;
         while (it.hasNext()) {
             int v = it.next();
@@ -60,17 +60,17 @@ public class FileBasedCollectionTest {
 
     @Test
     public void testContains() {
-        Assert.assertTrue(collection.contains(101));
-        Assert.assertTrue(collection.contains(303));
-        Assert.assertFalse(collection.contains(404));
+        Assert.assertTrue(list.contains(101));
+        Assert.assertTrue(list.contains(303));
+        Assert.assertFalse(list.contains(404));
     }
 
 
     @Test
     public void testClear() {
-        collection.clear();
-        Assert.assertEquals(0, collection.size());
-        Assert.assertTrue(collection.isEmpty());
+        list.clear();
+        Assert.assertEquals(0, list.size());
+        Assert.assertTrue(list.isEmpty());
     }
 
     @Test(expected = UnsupportedOperationException.class)

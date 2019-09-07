@@ -25,11 +25,15 @@ public class TunnelConfig {
 
     private String appId;
     private String metaDomain;
-    private String configFile;
 
-    private boolean useApollo;
+    private Type configType;
+    private String configSource;
     private boolean useYukon;
 
     private int processId;
+
+    public enum Type {
+        DATABASE, FILE, APOLLO
+    }
 
 }

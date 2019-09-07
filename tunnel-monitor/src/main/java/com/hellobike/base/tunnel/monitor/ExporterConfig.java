@@ -35,7 +35,7 @@ public class ExporterConfig {
                 "slotName", "appId",
                 "database", "table",
                 "target", "total",
-                "currentTime", "error"
+                /*"currentTime",*/ "error"
         };
     }
 

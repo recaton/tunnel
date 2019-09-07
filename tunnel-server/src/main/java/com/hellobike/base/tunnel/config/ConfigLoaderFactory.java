@@ -16,6 +16,7 @@
 package com.hellobike.base.tunnel.config;
 
 import com.hellobike.base.tunnel.apollo.ApolloConfigLoader;
+import com.hellobike.base.tunnel.config.db.DatabaseConfigLoader;
 import com.hellobike.base.tunnel.config.file.FileConfigLoader;
 import com.hellobike.base.tunnel.config.file.PropertiesFileConfigLoader;
 import com.hellobike.base.tunnel.config.file.YmlFileConfigLoader;
@@ -29,10 +30,11 @@ public class ConfigLoaderFactory {
     }
 
     public static ConfigLoader getConfigLoader(TunnelConfig tunnelConfig) {
-        if (tunnelConfig.isUseApollo()) {
-            return new ApolloConfigLoader(tunnelConfig.getAppId(), tunnelConfig.getMetaDomain());
+        switch (tunnelConfig.getConfigType()) {
+            case DATABASE: return new DatabaseConfigLoader(tunnelConfig.getConfigSource());
+            case APOLLO: return new ApolloConfigLoader(tunnelConfig.getAppId(), tunnelConfig.getMetaDomain());
+            default: return getFileConfigLoader(tunnelConfig.getConfigSource());
         }
-        return getFileConfigLoader(tunnelConfig.getConfigFile());
     }
 
     public static FileConfigLoader getFileConfigLoader(String fileName){

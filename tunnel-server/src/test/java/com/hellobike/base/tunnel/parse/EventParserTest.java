@@ -88,7 +88,12 @@ public class EventParserTest {
         // case2.4: message 中包含sql规范中的转义字符(英文单引号), 转义字符出现在value的两端和中部
         message = "table public.test: UPDATE: id[bigint]:2121 update_on[timestamp without time zone]:'2019-04-17 16:09:23.656' email[character varying]:null name[character varying]:'''test''_name'''";
         Assert.assertEquals("''test''_name''", parser.parseEvent(message).getDataList().get(3).getValue());
+        // case2.5: message 中包含sql规范中的转义字符(英文单引号), 转义字符出现在value的中部并紧跟空格
+        message = "table public.test: UPDATE: id[bigint]:2121 update_on[timestamp without time zone]:'2019-04-17 16:09:23.656' email[character varying]:null name[character varying]:'''test'' _name'''";
+        Assert.assertEquals("''test'' _name''", parser.parseEvent(message).getDataList().get(3).getValue());
 
+        message = "table public.test: INSERT: id[bigint]:2121 update_on[timestamp without time zone]:'2019-06-18 16:09:23.656' email[character varying]:null created_on[timestamp without time zone]:'2019-05-29 13:59:43.930871'";
+        Assert.assertEquals("2019-05-29 13:59:43.930871", parser.parseEvent(message).getDataList().get(3).getValue());
     }
 
 }

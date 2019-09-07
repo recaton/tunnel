@@ -16,6 +16,7 @@
 
 package com.hellobike.base.tunnel;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -31,6 +32,10 @@ public class TunnelContext {
 
     public static TunnelServer findServer(String serverId) {
         return SERVERS.get(serverId);
+    }
+
+    public static Collection<TunnelServer> findAllServers() {
+        return SERVERS.values();
     }
 
     public static void putServer(TunnelServer server) {

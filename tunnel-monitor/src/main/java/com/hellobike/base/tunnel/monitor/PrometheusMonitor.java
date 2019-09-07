@@ -27,7 +27,7 @@ public class PrometheusMonitor implements TunnelMonitor {
     public PrometheusMonitor(ExporterConfig config) {
         this.gauge = Gauge.build()
                 .name(config.getMetricName())
-                .labelNames(config.getLabelNames()).help("Tunnel Requests.")
+                .labelNames(config.getLabelNames()).help("The amount affected for one label.")
                 .register();
     }
 
@@ -36,7 +36,7 @@ public class PrometheusMonitor implements TunnelMonitor {
         this.gauge.labels(statics.getSlotName(), statics.getAppId(),
                 statics.getDatabase(), statics.getTable(),
                 statics.getTarget(), String.valueOf(statics.getTotal()),
-                String.valueOf(statics.getCurrentTime()), statics.getError() == null ? "" : statics.getError()).inc();
+                /*String.valueOf(statics.getCurrentTime()),*/ statics.getError() == null ? "" : statics.getError()).inc();
     }
 
 }

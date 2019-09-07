@@ -22,6 +22,7 @@ import com.hellobike.base.tunnel.config.*;
 import com.hellobike.base.tunnel.constants.Constants;
 import com.hellobike.base.tunnel.filter.TableNameFilter;
 import com.hellobike.base.tunnel.monitor.ExporterConfig;
+import com.hellobike.base.tunnel.monitor.Statics;
 import com.hellobike.base.tunnel.monitor.TunnelExporter;
 import com.hellobike.base.tunnel.monitor.TunnelMonitorFactory;
 import com.hellobike.base.tunnel.publisher.PublisherManager;
@@ -97,17 +98,13 @@ public class TunnelLauncher {
 
     }
 
-    public static TunnelConfig getTunnelConfig() {
-        return TUNNEL_CONFIG;
-    }
-
     /**
      * 初始化Tunnel 配置
      * <pre>
      *     -d domain
      *     -a app id
-     *     -u use apollo
-     *     -c config file
+     *     -t config type: apollo, file, database
+     *     -s config source
      *     -y use yukon
      * </pre>
      *
@@ -117,9 +114,12 @@ public class TunnelLauncher {
         TUNNEL_CONFIG.setProcessId(getPid());
         TUNNEL_CONFIG.setAppId(cfg.getOrDefault("-a", Constants.APP_ID));
         TUNNEL_CONFIG.setMetaDomain(cfg.getOrDefault("-d", getMetaDomain()));
-        TUNNEL_CONFIG.setUseApollo("true".equalsIgnoreCase(cfg.getOrDefault("-u", "false")));
+        TUNNEL_CONFIG.setConfigType(TunnelConfig.Type.valueOf(cfg.getOrDefault("-t", "FILE").toUpperCase()));
         TUNNEL_CONFIG.setUseYukon("true".equalsIgnoreCase(cfg.getOrDefault("-y", "false")));
-        TUNNEL_CONFIG.setConfigFile(cfg.getOrDefault("-c", "cfg.yml"));
+        if(TUNNEL_CONFIG.getConfigType() == TunnelConfig.Type.DATABASE && StringUtils.isEmpty(cfg.get("-s"))) {
+            throw new RuntimeException("You must to specify config source.");
+        }
+        TUNNEL_CONFIG.setConfigSource(cfg.getOrDefault("-s", "cfg.yml"));
     }
 
     /**
@@ -189,6 +189,11 @@ public class TunnelLauncher {
         ApolloConfig apolloConfig = JSON.parseObject(value, ApolloConfig.class);
 
         List<ApolloConfig.Subscribe> subscribes = apolloConfig.getSubscribes();
+        if(CollectionUtils.isEmpty(subscribes)) {
+            // subscriber is empty, should remove all servers
+            TunnelContext.close();
+            return;
+        }
         if(!checkSubscribeConfig(subscribes)){
             return;
         }
@@ -290,6 +295,15 @@ public class TunnelLauncher {
                 .collect(Collectors.toList());
 
         PublisherManager.getInstance().putPublisher(slotName, new KafkaPublisher(kafkaConfigs));
+        rules.forEach(rule -> TunnelMonitorFactory.getTunnelMonitor().collect(Statics.createStatics(
+                "AppTunnelService",
+                rule.getTopic().split("\\.")[0],
+                slotName,
+                rule.getTable(),
+                0,
+                "kafka",
+                ""
+        )));
     }
 
     private static void parseEsConfig(String slotName, ApolloConfig.EsConf esConf, List<ApolloConfig.Rule> rules) {

@@ -15,106 +15,39 @@
  */
 package com.hellobike.base.tunnel.config.file;
 
-import com.hellobike.base.tunnel.config.ConfigListener;
-import com.hellobike.base.tunnel.config.ConfigLoader;
-import com.hellobike.base.tunnel.utils.NamedThreadFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.hellobike.base.tunnel.config.WatchedConfigLoader;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.nio.file.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author machunxiao create at 2018-12-26
  */
-public abstract class FileConfigLoader implements ConfigLoader, AutoCloseable {
-
-    protected final Logger logger = LoggerFactory.getLogger(this.getClass());
-
-    private File file;
-
-    private Map<String, String> properties = new ConcurrentHashMap<>();
-    private List<ConfigListener> listeners = new CopyOnWriteArrayList<>();
-    private ExecutorService executor = new ThreadPoolExecutor(1, 1, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<>(1), new NamedThreadFactory("FileWatcherThread"));
-    private AtomicBoolean started = new AtomicBoolean(Boolean.FALSE);
+public abstract class FileConfigLoader extends WatchedConfigLoader<File> {
 
     public FileConfigLoader(String fileName) {
-        this.properties.putAll(load(fileName));
-        addFileWatcher(this.file);
+        super(lookupConfigFile(fileName));
     }
 
-    private Map<String, String> load(String fileName) {
-        if (!(this.file = new File(fileName)).isFile() &&
-                !(this.file = new File(System.getProperty("user.dir") + "/conf/" + fileName)).isFile()) {
-            this.file = new File(this.getClass().getResource("/conf/").getPath() + fileName);
+    private static File lookupConfigFile(String fileName) {
+        File file;
+        if (!(file = new File(fileName)).isFile() &&
+                !(file = new File(System.getProperty("user.dir") + "/conf/" + fileName)).isFile()) {
+            file = new File(ClassLoader.class.getResource("/conf/").getPath() + fileName);
         }
-        return load(file);
+        return file;
     }
 
-    protected abstract Map<String, String> load(File file);
 
     @Override
-    public String getProperty(String key, String defaultValue) {
-        return properties.getOrDefault(key, defaultValue);
-    }
-
-    @Override
-    public void addChangeListener(ConfigListener configListener) {
-        if (!this.listeners.contains(configListener)) {
-            this.listeners.add(configListener);
-        }
-    }
-
-    @Override
-    public void close() {
-        this.started.compareAndSet(Boolean.TRUE, Boolean.FALSE);
-        this.executor.shutdown();
-    }
-
-    private void addFileWatcher(File file) {
-        FileWatchTask fileWatchTask = new FileWatchTask(file);
-
-        this.started.compareAndSet(Boolean.FALSE, Boolean.TRUE);
-        this.executor.submit(fileWatchTask);
-    }
-
-    private static class ThreeTuple<O1, O2, O3> {
-
-        private O1 k1;
-        private O2 v1;
-        private O3 v2;
-
-        private ThreeTuple(O1 k1, O2 v1, O3 v2) {
-            this.k1 = k1;
-            this.v1 = v1;
-            this.v2 = v2;
-        }
-
-        private boolean valueEquals() {
-            if (v1 == null) {
-                return v2 == null;
-            }
-            return v1.equals(v2);
-        }
-    }
-
-    private class FileWatchTask implements Runnable {
-
-        private File file;
-
-        private FileWatchTask(File file) {
-            this.file = file;
-        }
-
-        @Override
-        public void run() {
+    protected Runnable watcherTask() {
+        return () -> {
             try (WatchService watchService = FileSystems.getDefault().newWatchService()) {
-                Path dir = Paths.get(this.file.getParent());
+                Path dir = Paths.get(watchKey.getParent());
                 dir.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
 
                 while (started.get()) {
@@ -128,11 +61,11 @@ public abstract class FileConfigLoader implements ConfigLoader, AutoCloseable {
                             WatchEvent.Kind<?> kind = event.kind();
                             List<ThreeTuple<String, String, String>> data = new ArrayList<>();
                             Path path = (Path) event.context();
-                            if (!path.toFile().getName().equals(this.file.getName())) {
+                            if (!path.toFile().getName().equals(watchKey.getName())) {
                                 continue;
                             }
                             if (kind == StandardWatchEventKinds.ENTRY_MODIFY) {
-                                Map<String, String> newData = load(this.file);
+                                Map<String, String> newData = load(watchKey);
                                 mergeData(properties, newData, data);
                             }
 
@@ -148,48 +81,7 @@ public abstract class FileConfigLoader implements ConfigLoader, AutoCloseable {
             } catch (Throwable t) {
                 //
             }
-        }
-
-        private synchronized void mergeData(Map<String, String> oldProp, Map<String, String> newProp, List<ThreeTuple<String, String, String>> data) {
-            Map<String, ThreeTuple<String, String, String>> tmp = new LinkedHashMap<>();
-            for (Map.Entry<String, String> e : oldProp.entrySet()) {
-                String key = e.getKey();
-                String oldVal = e.getValue();
-                String newVal = newProp.get(key);
-
-                if (newVal == null) {
-                    oldProp.remove(key);
-                }
-
-                tmp.put(key, new ThreeTuple<>(key, oldVal, newVal));
-            }
-
-            for (Map.Entry<String, String> e : newProp.entrySet()) {
-                String key = e.getKey();
-                String newVal = e.getValue();
-
-                String oldVal = oldProp.putIfAbsent(key, newVal);
-
-                tmp.putIfAbsent(key, new ThreeTuple<>(key, oldVal, newVal));
-            }
-
-            data.addAll(new ArrayList<>(tmp.values()));
-            oldProp.clear();
-            oldProp.putAll(newProp);
-        }
-
-        private void onDataChange(List<ThreeTuple<String, String, String>> data) {
-            for (ThreeTuple<String, String, String> tuple : data) {
-                for (ConfigListener listener : listeners) {
-                    if (!tuple.valueEquals()) {
-                        listener.onChange(tuple.k1, tuple.v1, tuple.v2);
-                    }
-                }
-            }
-        }
-
-
+        };
     }
-
 
 }

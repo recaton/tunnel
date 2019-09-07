@@ -161,6 +161,9 @@ public class TunnelServer {
         assert !connection.isClosed();
 
         //non blocking receive message
+        // Here may throw "database connection reset exception" when a big transaction committed.
+        // You can increase "wal_sender_timeout" on postgresql or set to 0 to disable it temporarily,
+        // and set back after the big traction parsed because the config is useful for the sending server to detect a standby crash or network outage.
         ByteBuffer msg = stream.readPending();
 
         if (msg == null) {

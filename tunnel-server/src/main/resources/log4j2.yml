@@ -22,4 +22,4 @@ Configuration:
     Root:
       level: info
       AppenderRef:
-        - ref: rollingFile
+        - ref: Console

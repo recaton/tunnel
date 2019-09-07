@@ -27,12 +27,17 @@ import java.util.regex.Pattern;
  */
 public class TableNameFilter implements IEventFilter {
 
-    private final String tableNameExp;
-    private final Pattern pattern;
+//    private final String tableNameExp;
+//    private final Pattern pattern;
+    private final String tableName;
 
-    public TableNameFilter(String tableNameExp) {
-        this.tableNameExp = StringUtils.isBlank(tableNameExp) ? ".*" : tableNameExp;
-        this.pattern = Pattern.compile(this.tableNameExp);
+//    public TableNameFilter(String tableNameExp) {
+//        this.tableNameExp = StringUtils.isBlank(tableNameExp) ? ".*" : tableNameExp;
+//        this.pattern = Pattern.compile(this.tableNameExp);
+//    }
+
+    public TableNameFilter(String tableName) {
+        this.tableName = tableName;
     }
 
     @Override
@@ -40,8 +45,9 @@ public class TableNameFilter implements IEventFilter {
         if (event == null || event.getTable() == null) {
             return false;
         }
-        Matcher matcher = pattern.matcher(event.getTable());
-        return matcher.matches();
+//        Matcher matcher = pattern.matcher(event.getTable());
+//        return matcher.matches();
+        return tableName.equals(event.getTable());
     }
 
 }
