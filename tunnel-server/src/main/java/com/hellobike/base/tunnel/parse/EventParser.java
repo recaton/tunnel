@@ -124,6 +124,10 @@ public class EventParser implements IEventParser {
         while (lexer.hasNext()) {
             ColumnData data = new ColumnData();
             String name = parseName(lexer);
+            // 一些特殊的字段名(如time)两端可能会被加上双引号，需去掉
+            if (name.length() > 0 && name.charAt(0) == '"' && name.charAt(name.length() - 1) == '"') {
+                name = name.substring(1, name.length() - 1);
+            }
             if ("(no-tuple-data)".equals(name)) {
                 // 删除时,无主键,不能同步
                 return null;
@@ -132,11 +136,6 @@ public class EventParser implements IEventParser {
             lexer.skip(1);
             String value = parseValue(lexer);
 
-
-            // 去除多余的符号 "'"
-//            if (value.length() > 0 && value.charAt(0) == '\'' && value.charAt(value.length() - 1) == '\'') {
-//                value = value.substring(1, value.length() - 1);
-//            }
             data.setName(name);
             data.setDataType(type);
             data.setValue(value);
