@@ -118,6 +118,10 @@ public class EventParser implements IEventParser {
 
         event.setSchema(schema);
         event.setTable(table);
+        // persistent_message没有必要同步
+        if ("persistent_message".equals(table)) {
+            return null;
+        }
         event.setEventType(EventType.getEventType(eventType));
         lexer.skip(1);
 
